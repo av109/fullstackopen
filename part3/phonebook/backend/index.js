@@ -63,6 +63,8 @@ app.use(
   )
 );
 
+app.use(express.static('dist')) //use dist for frontend
+
 app.get("/", (req, res) => {
   res.send("<h1>Phonebook Backend!</h1>");
 });
