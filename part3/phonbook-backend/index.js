@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const morgan = require("morgan");
 
 let persons = [
   {
@@ -26,7 +27,41 @@ let persons = [
 
 const date = new Date();
 
+// morgan(function (tokens, req, res) {
+//     return [
+//       tokens.method(req, res),
+//       tokens.url(req, res),
+//       tokens.status(req, res),
+//       tokens.res(req, res, 'content-length'), '-',
+//       tokens['response-time'](req, res), 'ms'
+//     ].join(' ')
+//   })
+
 app.use(express.json());
+// app.use(morgan('combined'));
+
+function assignId(req, res, next) {
+  req.id = Date.now();
+  next();
+}
+
+// Define custom tokens
+morgan.token("id", (req) => req.id);
+morgan.token("body", (req) => {
+  // Only log the body for POST and PUT requests
+  if (req.method === "POST" || req.method === "PUT") {
+    return JSON.stringify(req.body) || "N/A";
+  }
+  return ""; // Return an empty string for other methods
+});
+
+// Use middleware in the correct order
+app.use(assignId); // Assigns `id` to the request
+app.use(
+  morgan(
+    ":id :method :url :status :res[content-length] - :response-time ms :body"
+  )
+);
 
 app.get("/", (req, res) => {
   res.send("<h1>Phonebook Backend!</h1>");
