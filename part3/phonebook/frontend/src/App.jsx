@@ -67,7 +67,6 @@ const App = () => {
 
             // console.log("Number updated successfully");
             showNotification("User updatedd successfully");
-
           })
           .catch((error) => {
             setErrorMessage(
@@ -93,24 +92,39 @@ const App = () => {
         ...newName,
         id: uuidv4(),
       };
-
+      // console.log("New object to be sent in handlesubmit:", newObject); // Debugging line
+      // personService
+      //   .create(newObject)
+      //   .then((res) => setPersons(persons.concat(res.data)));
+      // // setPersons(persons.concat(newObject));
+      // setNewName({
+      //   name: "",
+      //   number: "",
+      // });
+      // // console.log("User added successfully");
+      // showNotification("User added successfully");
       personService
         .create(newObject)
-        .then((res) => setPersons(persons.concat(res.data)));
-      // setPersons(persons.concat(newObject));
-      setNewName({
-        name: "",
-        number: "",
-      });
-      // console.log("User added successfully");
-      showNotification("User added successfully");
-
+        .then((res) => {
+          setPersons(persons.concat(res.data));
+          setNewName({ name: "", number: "" });
+          showNotification("User added successfully");
+        })
+        .catch((error) => {
+          console.error("Error creating person:", error);
+          setErrorMessage("Failed to add person. Please try again.");
+          setTimeout(() => setErrorMessage(null), 5000);
+        });
     }
   };
 
   const handleInput = (e) => {
     const { name, value } = e.target;
     setNewName({ ...newName, [name]: value });
+    // console.log("Updated newName state in handleinput function:", {
+    //   ...newName,
+    //   [name]: value,
+    // }); // Debugging line
   };
 
   //  console.log(searchValue)
@@ -133,7 +147,6 @@ const App = () => {
           setPersons(persons.filter((person) => person.id !== id));
           // console.log("User deleted successfully");
           showNotification("User deleted successfully");
-
         })
         .catch((error) => {
           console.error("Error deleting user:", error);
@@ -141,7 +154,6 @@ const App = () => {
     } else {
       // console.log("You presesd cancel");
       showNotification("You presesd cancel");
-
     }
     // console.log("delete id:", id, "of person: ", changedPeople)
   };
