@@ -1,5 +1,5 @@
-require('dotenv').config()
-const Person = require('./models/person')
+require("dotenv").config();
+const Person = require("./models/person");
 const express = require("express");
 const app = express();
 const morgan = require("morgan");
@@ -66,16 +66,16 @@ app.use(
   )
 );
 
-app.use(express.static('dist')) //use dist for frontend
+app.use(express.static("dist")); //use dist for frontend
 
 app.get("/", (req, res) => {
   res.send("<h1>Phonebook Backend!</h1>");
 });
 
 app.get("/api/persons", (request, response) => {
-  Person.find({}).then(person => {
-    response.json(person)
-  })
+  Person.find({}).then((person) => {
+    response.json(person);
+  });
 });
 
 // app.get("/info", (request, response) => {
@@ -85,7 +85,7 @@ app.get("/api/persons", (request, response) => {
 // });
 
 app.get("/info", (request, response) => {
-  Person.countDocuments({}).then(count => {
+  Person.countDocuments({}).then((count) => {
     response.send(
       `<p>Phonebook has info for ${count} people</p> <p>${new Date()}</p>`
     );
@@ -102,33 +102,66 @@ app.get("/info", (request, response) => {
 //   }
 // });
 
-app.post('/api/persons', (request, response) => {
-  const body = request.body
-  // console.log('Request body in app.post:', body); // Debugging line
+app.post("/api/persons", (request, response, next) => {
+  const body = request.body;
 
   if (!body.name || !body.number) {
-    return response.status(400).json({ error: 'Name or number missing' })
+    return response.status(400).json({ error: "Name or number missing" });
   }
 
-  const person = new Person({
-    name: body.name,
-    number: body.number,
-  })
+  Person.findOne({ name: body.name })
+    .then(existingPerson => {
+      if (existingPerson) {
+        return response.status(400).json({ error: "Name must be unique" });
+      }
 
-  person.save()
-  .then(p => {
-    response.json(p);
-  })
-  .catch(error => {
-    response.status(500).json({ error: 'Failed to save person' });
-  });
-})
+      const person = new Person({
+        name: body.name,
+        number: body.number,
+      });
 
-app.get('/api/persons/:id', (request, response) => {
-  Person.findById(request.params.id).then(p => {
-    response.json(p)
-  })
-})
+      return person.save();
+    })
+    .then(savedPerson => {
+      response.json(savedPerson);
+    })
+    .catch(error => next(error));
+});
+
+app.put("/api/persons/:id", (request, response, next) => {
+  const { number } = request.body;
+
+  if (!number) {
+    return response.status(400).json({ error: "Number is missing" });
+  }
+
+  const updatedPerson = { number };
+
+  Person.findByIdAndUpdate(
+    request.params.id,
+    updatedPerson,
+    { new: true, runValidators: true, context: "query" } // Options to return the updated document and run validation
+  )
+    .then((updatedPerson) => {
+      if (!updatedPerson) {
+        return response.status(404).send({ error: "Person not found" });
+      }
+      response.json(updatedPerson);
+    })
+    .catch((error) => next(error));
+});
+
+app.get("/api/persons/:id", (request, response, next) => {
+  Person.findById(request.params.id)
+    .then((person) => {
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
+});
 
 // app.delete("/api/persons/:id", (request, response) => {
 //   const id = request.params.id;
@@ -137,13 +170,16 @@ app.get('/api/persons/:id', (request, response) => {
 //   response.status(204).end();
 // });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  persons = persons.filter((person) => person.id !== id);
-
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then((result) => {
+      if (!result) {
+        return response.status(404).send({ error: "Person not found" });
+      }
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
-
 
 // const generateId = () => {
 //   return String(Date.now());
@@ -181,8 +217,24 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint);
 
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+  if (error.name === "ValidationError") {
+    return response.status(400).send({ error: error.message });
+  }
+
+  next(error);
+};
+
+// this has to be the last loaded middleware, also all the routes should be registered before this!
+app.use(errorHandler);
+
 // const PORT = 3001;
-const PORT = process.env.PORT
+const PORT = process.env.PORT;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
