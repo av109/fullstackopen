@@ -38,23 +38,75 @@ const App = () => {
     setNoti(message);
   };
 
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   const existingPerson = persons.find((p) => p.name === newName.name);
+
+  //   if (existingPerson) {
+  //     const isConfirmed = window.confirm(
+  //       `Do you want to change the number of " ${newName.name}" to the new number " ${newName.number}"?`
+  //     );
+
+  //     if (isConfirmed) {
+  //       const updatedPerson = { ...existingPerson, number: newName.number };
+
+  //       personService
+  //         .update(existingPerson.id, updatedPerson)
+  //         .then((response) => {
+  //           setPersons(
+  //             persons.map((person) =>
+  //               person.id !== existingPerson.id ? person : response.data
+  //             )
+  //           );
+  //           setNewName({ name: "", number: "" });
+
+  //           showNotification("User updatedd successfully");
+  //         })
+  //         .catch((error) => {
+  //           setErrorMessage(
+  //             `Person '${existingPerson.name}' was already removed from server`
+  //           );
+  //           console.error(error);
+  //           setTimeout(() => {
+  //             setErrorMessage(null);
+  //           }, 5000);
+  //         });
+  //     } else {
+  //       return;
+  //     }
+  //   } else {
+  //     const newObject = {
+  //       ...newName,
+  //       id: uuidv4(),
+  //     };
+
+  //     personService
+  //       .create(newObject)
+  //       .then((res) => {
+  //         setPersons(persons.concat(res.data));
+  //         setNewName({ name: "", number: "" });
+  //         showNotification("User added successfully");
+  //       })
+  //       .catch((error) => {
+  //         console.error("Error creating person:", error);
+  //         setErrorMessage("Failed to add person. Please try again.");
+  //         setTimeout(() => setErrorMessage(null), 5000);
+  //       });
+  //   }
+  // };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const existingPerson = persons.find((p) => p.name === newName.name);
-
-    // const namearr = persons.map((p) => p.name);
-    // const numarr = persons.map((p) => p.number);
+  
     if (existingPerson) {
-      // return alert(
-      //   `${newName.name} & ${newName.number} is already added to phonebook`
-      // );
       const isConfirmed = window.confirm(
-        `Do you want to change the number of " ${newName.name}" to the new number " ${newName.number}"?`
+        `Do you want to change the number of "${newName.name}" to the new number "${newName.number}"?`
       );
-
+  
       if (isConfirmed) {
         const updatedPerson = { ...existingPerson, number: newName.number };
-
+  
         personService
           .update(existingPerson.id, updatedPerson)
           .then((response) => {
@@ -64,45 +116,22 @@ const App = () => {
               )
             );
             setNewName({ name: "", number: "" });
-
-            // console.log("Number updated successfully");
-            showNotification("User updatedd successfully");
+            showNotification("User updated successfully");
           })
           .catch((error) => {
+            console.error("Error updating person:", error);
             setErrorMessage(
-              `Person '${existingPerson.name}' was already removed from server`
+              error.response?.data?.error || "Failed to update person."
             );
-            console.error(error);
-            setTimeout(() => {
-              setErrorMessage(null);
-            }, 5000);
+            setTimeout(() => setErrorMessage(null), 5000);
           });
-
-        // .catch((error) => {
-        //   console.error("Error updating number:", error);
-        //   alert(
-        //     `The person '${existingPerson.name}' was already removed from the server.`
-        //   );
-        // });
-      } else {
-        return;
       }
     } else {
       const newObject = {
         ...newName,
         id: uuidv4(),
       };
-      // console.log("New object to be sent in handlesubmit:", newObject); // Debugging line
-      // personService
-      //   .create(newObject)
-      //   .then((res) => setPersons(persons.concat(res.data)));
-      // // setPersons(persons.concat(newObject));
-      // setNewName({
-      //   name: "",
-      //   number: "",
-      // });
-      // // console.log("User added successfully");
-      // showNotification("User added successfully");
+  
       personService
         .create(newObject)
         .then((res) => {
@@ -112,30 +141,22 @@ const App = () => {
         })
         .catch((error) => {
           console.error("Error creating person:", error);
-          setErrorMessage("Failed to add person. Please try again.");
+          // Display the error message from Mongoose
+          setErrorMessage(
+            error.response?.data?.error
+          );
           setTimeout(() => setErrorMessage(null), 5000);
         });
     }
   };
 
+
   const handleInput = (e) => {
     const { name, value } = e.target;
     setNewName({ ...newName, [name]: value });
-    // console.log("Updated newName state in handleinput function:", {
-    //   ...newName,
-    //   [name]: value,
-    // }); // Debugging line
   };
 
-  //  console.log(searchValue)
-
   const handleDelete = (id) => {
-    // const url = `http://localhost:3001/persons/`;
-    // const findper = persons.find(p => p.id === id)
-    // const filteredPeople = persons.filter((item) => item.id !== id);
-    // const changedPeople = {...filteredPeople}
-
-    // const filter = persons.filter((i) => i.id === id);
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this person?"
     );
@@ -145,17 +166,14 @@ const App = () => {
         .remove(id)
         .then(() => {
           setPersons(persons.filter((person) => person.id !== id));
-          // console.log("User deleted successfully");
           showNotification("User deleted successfully");
         })
         .catch((error) => {
           console.error("Error deleting user:", error);
         });
     } else {
-      // console.log("You presesd cancel");
       showNotification("You presesd cancel");
     }
-    // console.log("delete id:", id, "of person: ", changedPeople)
   };
   const filteredPersons = persons.filter((person) => {
     return person.name.toLowerCase().includes(searchValue);
@@ -177,7 +195,6 @@ const App = () => {
         handleSubmit={handleSubmit}
       />
       <Header text="Numbers" />
-      {/* {filteredPersons ? <ShowList persons={filteredPersons} handleDelete={handleDelete}/> : <ShowList persons={persons} handleDelete={handleDelete}/>} */}
       <ShowList persons={filteredPersons} handleDelete={handleDelete} />
     </div>
   );

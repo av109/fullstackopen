@@ -1,38 +1,44 @@
-const mongoose = require('mongoose')
+require("dotenv").config();
+const mongoose = require("mongoose");
 
-mongoose.set('strictQuery', false)
+const url = process.env.MONGODB_URI;
+console.log("connecting to", url);
 
-
-const url = process.env.MONGODB_URI
-
-console.log('connecting to', url)
-mongoose.connect(url)
-
-  .then(result => {
-    console.log('connected to MongoDB')
+mongoose
+  .connect(url)
+  .then(() => {
+    console.log("connected to MongoDB");
   })
-  .catch(error => {
-    console.log('error connecting to MongoDB:', error.message)
-  })
+  .catch((error) => {
+    console.log("error connecting to MongoDB:", error.message);
+  });
 
-const noteSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
+const personSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    minlength: 3,
+    required: true,
+  },
+  number: {
+    type: String,
+    minlength: 8,
+    required: true,
+    validate: {
+      validator: function (v) {
+        // Custom validation for phone number format
+        return /^\d{2,3}-\d+$/.test(v);
       },
-      number: {
-        type: String,
-        required: true,
-      },
-})
+      message: (props) => `${props.value} is not a valid phone number!`,
+    },
+  },
+});
 
-noteSchema.set('toJSON', {
+personSchema.set("toJSON", {
   transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
-    delete returnedObject._id
-    delete returnedObject.__v
-  }
-})
+    returnedObject.id = returnedObject._id.toString();
+    delete returnedObject._id;
+    delete returnedObject.__v;
+  },
+});
 
-
-module.exports = mongoose.model('Person', noteSchema)
+module.exports = mongoose.model("Person", personSchema);
